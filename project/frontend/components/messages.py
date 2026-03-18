@@ -1,16 +1,25 @@
 """
 frontend/components/messages.py
 --------------------------------
-Renders chat messages with law-reference cards.
-
-FIXES:
-  - View More / View Less uses JS inside HTML (no st.button rerun to top)
-  - Clause text is truly clamped to 5 lines by default via CSS
-  - Clicking "View full text" expands in place without scrolling to top
-  - Streaming user bubble kept separate so input stays at bottom
+User: right-aligned pill.
 """
 
+import html
+import re
+from urllib.parse import quote
+
 import streamlit as st
+
+
+def _clean_ref_text(raw: str) -> str:
+    """Strip accidental HTML fragments from law text before rendering."""
+    text = html.unescape(str(raw or ""))
+    text = re.sub(r"(?is)<script.*?>.*?</script>", "", text)
+    text = re.sub(r"(?is)<style.*?>.*?</style>", "", text)
+    text = re.sub(r"(?is)<[^>]+>", "", text)
+    text = re.sub(r"(?i)</?\s*div\s*>", "", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 
 def render_message(msg: dict, msg_idx: int) -> None:
@@ -24,19 +33,20 @@ def render_message(msg: dict, msg_idx: int) -> None:
 
 
 def render_streaming_user(query: str) -> None:
+    escaped = html.escape(str(query))
     st.markdown(f"""
     <div class="msg-row user-row">
-      <div class="av av-you">YOU</div>
-      <div class="msg-body"><div class="bubble-user">{query}</div></div>
+      <div class="av av-you">U</div>
+      <div class="msg-body"><div class="bubble-user">{escaped}</div></div>
     </div>""", unsafe_allow_html=True)
 
 
 def render_message_list(messages: list) -> None:
     if not messages:
         st.markdown("""
-        <div style="text-align:center;padding:60px 20px;color:var(--text3)">
-          <div style="font-size:2.8rem;margin-bottom:14px">💬</div>
-          <div style="font-size:0.90rem">Type your first legal question below.</div>
+        <div style="text-align:center;padding:60px 20px;color:var(--on-surface-3)">
+          <div style="font-size:2.5rem;margin-bottom:12px">💬</div>
+          <div style="font-size:0.9375rem">Type your first legal question below.</div>
         </div>""", unsafe_allow_html=True)
         return
     st.markdown('<div class="msgs-wrap">', unsafe_allow_html=True)
@@ -48,17 +58,18 @@ def render_message_list(messages: list) -> None:
 # --- private ---
 
 def _render_user(content: str) -> None:
+    escaped = html.escape(str(content))
     st.markdown(f"""
     <div class="msg-row user-row">
-      <div class="av av-you">YOU</div>
-      <div class="msg-body"><div class="bubble-user">{content}</div></div>
+      <div class="av av-you">U</div>
+      <div class="msg-body"><div class="bubble-user">{escaped}</div></div>
     </div>""", unsafe_allow_html=True)
 
 
 def _render_assistant(content: str, refs: list, msg_idx: int) -> None:
     st.markdown(f"""
     <div class="msg-row">
-      <div class="av av-lex">L</div>
+      <div class="av av-lex">✦</div>
       <div class="msg-body"><div class="bubble-lex">{content}</div></div>
     </div>""", unsafe_allow_html=True)
 
@@ -70,17 +81,16 @@ def _render_assistant(content: str, refs: list, msg_idx: int) -> None:
 def _render_cite_chips(refs: list) -> None:
     chips = "".join(
         f'<span class="cite-chip"><span class="cite-dot"></span>'
-        f'§{r.get("section_number","?")} · {r.get("act_name","")[:22]}</span>'
+        f'{html.escape(str(r.get("section_number","?")))} · {html.escape(str(r.get("act_name",""))[:24])}</span>'
         for r in refs
     )
     st.markdown(f'<div class="cite-row">{chips}</div>', unsafe_allow_html=True)
 
 
 def _render_ref_expander(refs: list, msg_idx: int) -> None:
-    with st.expander(
-        f"📋  {len(refs)} law section{'s' if len(refs)!=1 else ''} retrieved",
-        expanded=False,
-    ):
+    n = len(refs)
+    label = f"📋  {n} law section{'s' if n != 1 else ''} retrieved"
+    with st.expander(label, expanded=False):
         for i, ref in enumerate(refs):
             if hasattr(ref, "__dict__"):
                 ref = ref.__dict__
@@ -90,23 +100,42 @@ def _render_ref_expander(refs: list, msg_idx: int) -> None:
 
 
 def _render_ref_card_js(ref: dict, msg_idx: int, ref_idx: int) -> None:
-    """
-    Renders a ref card with pure-JS View More toggle.
-    No st.button = no scroll-to-top on click.
-    """
-    score     = ref.get("relevance_score", 0)
-    score_pct = min(100, max(5, int((score + 5) / 10 * 100)))
-    clause    = ref.get("clause_text", "").replace("'", "&#39;").replace('"', "&quot;")
-    card_id   = f"rc_{msg_idx}_{ref_idx}"
-    text_id   = f"rt_{msg_idx}_{ref_idx}"
-    btn_id    = f"rb_{msg_idx}_{ref_idx}"
+    """Ref card with pure-JS View More toggle. No st.button = no scroll-to-top."""
+    score        = ref.get("relevance_score", 0)
+    score_pct    = min(100, max(5, int((score + 5) / 10 * 100)))
+    act_name     = str(ref.get("act_name", ""))
+    sec_num      = str(ref.get("section_number", ""))
+    sec_title    = str(ref.get("section_title", ""))
+    domain       = str(ref.get("domain", "")).replace("_", " ").title()
+    clause_text  = _clean_ref_text(ref.get("clause_text", ""))
 
-    # Truncate preview to first 400 chars shown via CSS clamp
-    has_more  = len(ref.get("clause_text", "")) > 380
-    source    = ref.get("source_url", "")
-    src_html  = (
-        f'<a href="{source}" target="_blank" class="ref-src-link">↗ Official source</a>'
-        if source else ""
+    esc_act      = html.escape(act_name)
+    esc_sec      = html.escape(sec_num)
+    esc_title    = html.escape(sec_title)
+    esc_domain   = html.escape(domain)
+    esc_clause   = html.escape(clause_text)
+    
+    # Aggressive stripping of any leftover stray escaped div tags that bypass regex
+    esc_clause = re.sub(r"(?i)&lt;/?.*?div.*?&gt;", "", esc_clause).strip()
+    
+    # CRITICAL: Streamlit's Markdown parser breaks HTML blocks if they contain double newlines.
+    # We replace \n with <br> to ensure the text renders inside the div as a continuous HTML block,
+    # preventing the template's actual closing </div> from being treated as an isolated plain text paragraph.
+    esc_clause = esc_clause.replace("\n", "<br>")
+
+    copy_payload = f"{act_name}\nSection {sec_num}: {sec_title}\n\n{clause_text}"
+    copy_q       = quote(copy_payload)
+
+    card_id  = f"rc_{msg_idx}_{ref_idx}"
+    text_id  = f"rt_{msg_idx}_{ref_idx}"
+    btn_id   = f"rb_{msg_idx}_{ref_idx}"
+
+    has_more    = len(clause_text) > 380
+    source      = str(ref.get("source_url", ""))
+    safe_source = html.escape(source, quote=True)
+    src_html    = (
+        f'<a href="{safe_source}" target="_blank" class="ref-src-link">↗ Official source</a>'
+        if source.startswith("http") else ""
     )
 
     more_btn = f"""
@@ -114,11 +143,9 @@ def _render_ref_card_js(ref: dict, msg_idx: int, ref_idx: int) -> None:
         var t=document.getElementById('{text_id}');
         var b=document.getElementById('{btn_id}');
         if(t.classList.contains('clamped')){{
-          t.classList.remove('clamped');
-          b.textContent='▲ Show less';
+          t.classList.remove('clamped'); b.textContent='▲ Show less';
         }}else{{
-          t.classList.add('clamped');
-          b.textContent='▼ View full text';
+          t.classList.add('clamped'); b.textContent='▼ View full text';
         }}
       ">▼ View full text</button>
     """ if has_more else ""
@@ -126,15 +153,37 @@ def _render_ref_card_js(ref: dict, msg_idx: int, ref_idx: int) -> None:
     st.markdown(f"""
     <div class="ref-card" id="{card_id}">
       <div class="ref-top">
-        <div class="ref-act">{ref.get('act_name','')}</div>
-        <div class="ref-sec">§ {ref.get('section_number','')}</div>
+        <div class="ref-act">{esc_act}</div>
+        <div class="ref-right">
+          <button class="ref-copy-btn" title="Copy section"
+            data-copy="{copy_q}"
+            onclick="(function(btn){{
+              var text=decodeURIComponent(btn.getAttribute('data-copy')||'');
+              function setState(ok){{
+                var prev=btn.textContent;btn.textContent=ok?'Copied':'Failed';
+                setTimeout(function(){{btn.textContent=prev;}},2000);
+              }}
+              function fallback(){{
+                var ta=document.createElement('textarea');ta.value=text;
+                ta.style.position='absolute';ta.style.left='-9999px';
+                document.body.appendChild(ta);ta.select();
+                try{{document.execCommand('copy');setState(true);}}
+                catch(e){{setState(false);}}
+                document.body.removeChild(ta);
+              }}
+              if(navigator.clipboard&&window.isSecureContext){{
+                navigator.clipboard.writeText(text).then(function(){{setState(true);}}).catch(fallback);
+              }}else{{fallback();}}
+            }})(this);">Copy</button>
+          <div class="ref-sec">{esc_sec}</div>
+        </div>
       </div>
-      <div class="ref-title">{ref.get('section_title','')}</div>
-      <div class="ref-domain">{ref.get('domain','').replace('_',' ').title()}</div>
+      <div class="ref-title">{esc_title}</div>
+      <div class="ref-domain">{esc_domain}</div>
       <div class="ref-bar-wrap">
         <div class="ref-bar-fill" style="width:{score_pct}%"></div>
       </div>
-      <div class="ref-text clamped" id="{text_id}">{ref.get('clause_text','')}</div>
+      <div class="ref-text clamped" id="{text_id}">{esc_clause}</div>
       {more_btn}
       {src_html}
     </div>
