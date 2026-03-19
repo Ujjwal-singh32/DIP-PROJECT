@@ -103,6 +103,9 @@ def main() -> None:
     else:
         render_message_list(active_chat.get("messages", []))
 
+    # Keep live streaming output inside chat area (above the fixed input bar)
+    live_container = st.container()
+
     # Input bar (always at bottom)
     query, submitted = render_input_bar()
 
@@ -116,7 +119,7 @@ def main() -> None:
             st.session_state.active_chat_id = chat["chat_id"]
 
         # Stream response, save to disk, bump form_key
-        run_stream(pipeline, q, st.session_state.active_chat_id)
+        run_stream(pipeline, q, st.session_state.active_chat_id, live_container=live_container)
 
         # Rerun to render the saved message from disk
         st.rerun()
