@@ -67,10 +67,11 @@ def _render_user(content: str) -> None:
 
 
 def _render_assistant(content: str, refs: list, msg_idx: int) -> None:
+    rendered_content = _render_assistant_content_block(content)
     st.markdown(f"""
     <div class="msg-row">
       <div class="av av-lex">✦</div>
-      <div class="msg-body"><div class="bubble-lex">{content}</div></div>
+      <div class="msg-body"><div class="bubble-lex">{rendered_content}</div></div>
     </div>""", unsafe_allow_html=True)
 
     if refs:
@@ -78,10 +79,42 @@ def _render_assistant(content: str, refs: list, msg_idx: int) -> None:
         _render_ref_expander(refs, msg_idx)
 
 
+def _render_assistant_content_block(content: str) -> str:
+    """Parse tagged LLM answer into summary + details dropdown UI."""
+    text = str(content or "").strip()
+
+    act_match = re.search(r"\[ACT_SECTION\]\s*(.+)", text)
+    brief_match = re.search(r"\[BRIEF\]\s*(.+)", text)
+    detailed_match = re.search(r"\[DETAILED\]\s*([\s\S]+)$", text)
+
+    # Fallback for any legacy/unstructured response
+    if not (act_match and brief_match and detailed_match):
+        fallback = html.escape(text).replace("\n", "<br>")
+        return fallback
+
+    act_line = html.escape(act_match.group(1).strip())
+    brief_line = html.escape(brief_match.group(1).strip()).replace("\n", "<br>")
+    detailed_text = html.escape(detailed_match.group(1).strip()).replace("\n", "<br>")
+
+    return f"""
+    <div class="ans-compact">
+      <div class="ans-act">{act_line}</div>
+      <div class="ans-brief">{brief_line}</div>
+      <details class="ans-details">
+        <summary class="ans-details-btn">
+          <span class="ans-open">▼ View detailed description</span>
+          <span class="ans-close">▲ Hide detailed description</span>
+        </summary>
+        <div class="ans-detailed">{detailed_text}</div>
+      </details>
+    </div>
+    """
+
+
 def _render_cite_chips(refs: list) -> None:
     chips = "".join(
         f'<span class="cite-chip"><span class="cite-dot"></span>'
-        f'{html.escape(str(r.get("section_number","?")))} · {html.escape(str(r.get("act_name",""))[:24])}</span>'
+    f'{html.escape(str(r.get("section_number","?")))} · {html.escape(str(r.get("act_name","")))}</span>'
         for r in refs
     )
     st.markdown(f'<div class="cite-row">{chips}</div>', unsafe_allow_html=True)
