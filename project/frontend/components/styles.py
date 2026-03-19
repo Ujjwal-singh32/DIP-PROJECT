@@ -41,12 +41,47 @@ html, body, [class*="css"] {
   color: var(--on-surface) !important;
   -webkit-font-smoothing: antialiased;
 }
-.stApp { background: var(--bg) !important; }
+.stApp {
+  background: radial-gradient(1200px 420px at 45% -120px, rgba(138,180,248,0.08), transparent 60%), var(--bg) !important;
+}
 .main .block-container { padding: 0 !important; max-width: 100% !important; }
-/* Hide Streamlit chrome — use visibility:hidden (not display:none) on header so
-   child elements (sidebar toggle) can override with visibility:visible */
+
+/* Remove any default top offset reserved by Streamlit app view containers */
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewContainer"] > .main,
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"],
+section.main,
+section.main > div {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  top: 0 !important;
+}
+/* Hide Streamlit chrome and collapse header height to remove top blank strip */
 #MainMenu, footer, .stDeployButton { visibility: hidden; display: none; }
-header { visibility: hidden; }
+header,
+[data-testid="stHeader"] {
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"] {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  visibility: hidden !important;
+}
 
 /* ── SIDEBAR TOGGLE ── */
 /* The collapsed-control button lives inside header; keep it always visible */
@@ -54,6 +89,12 @@ section[data-testid="stSidebarCollapsedControl"],
 [data-testid="collapsedControl"] {
   visibility: visible !important;
   display: flex !important;
+}
+[data-testid="stSidebarCollapsedControl"] {
+  position: fixed !important;
+  top: 8px !important;
+  left: 8px !important;
+  z-index: 1200 !important;
 }
 [data-testid="collapsedControl"] {
   background: transparent !important;
@@ -221,10 +262,13 @@ section[data-testid="stSidebar"] [data-testid="column"]:nth-child(2) button:hove
   align-items: center;
   justify-content: space-between;
   /* 56px left clears the Streamlit sidebar-toggle button (≈40px wide) */
-  padding: 12px 28px 12px 56px;
+  padding: 0 28px 0 56px;
+  min-height: 58px;
   background: var(--bg);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 350px;
+  right: 0;
   z-index: 100;
   border-bottom: 1px solid var(--border);
 }
@@ -311,7 +355,7 @@ section[data-testid="stSidebar"] [data-testid="column"]:nth-child(2) button:hove
 
 /* ── MESSAGES ── */
 .msgs-wrap {
-  padding: 32px 0 28px;
+  padding: 8px 0 140px;
   max-width: 1000px;
   width: 80%;
   margin: 0 auto;
@@ -580,6 +624,33 @@ section[data-testid="stSidebar"] [data-testid="column"]:nth-child(2) button:hove
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.ref-text-full { margin-top: 8px; }
+.ref-text-preview { margin-top: 8px; }
+
+.ref-more {
+  margin-top: 8px;
+}
+.ref-more > summary {
+  list-style: none;
+}
+.ref-more > summary::-webkit-details-marker {
+  display: none;
+}
+.ref-more .vm-close {
+  display: none;
+}
+.ref-more[open] .vm-open {
+  display: none;
+}
+.ref-more[open] .vm-close {
+  display: inline;
+}
+.ref-more:not([open]) .ref-text-full {
+  display: none;
+}
+.ref-more[open] + .ref-text-preview {
+  display: none;
+}
 .vm-js-btn {
   display: inline-flex;
   align-items: center;
@@ -644,15 +715,15 @@ section[data-testid="stSidebar"] [data-testid="column"]:nth-child(2) button:hove
 .input-fixed {
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  margin-left: 280px;
-  background: var(--bg);
+  margin-left: 350px;
+  background: linear-gradient(180deg, rgba(19,19,20,0) 0%, rgba(19,19,20,0.94) 28%, rgba(19,19,20,1) 56%);
   z-index: 9999;
   /* Comfortable side padding so pill doesn't stretch to viewport edges */
-  padding: 12px 48px 20px;
+  padding: 12px 48px 10px;
 }
 .input-inner {
   /* Max width matches the chat content column — centred with auto margins */
-  max-width: 680px;
+  max-width: 860px;
   width: 80%;
   margin: 0 auto;
 }
@@ -662,11 +733,34 @@ section[data-testid="stSidebar"] [data-testid="column"]:nth-child(2) button:hove
 }
 .input-fixed [data-testid="column"] { padding: 0 !important; }
 
+/* Hide Streamlit helper text: "Press Enter to submit form" */
+.input-fixed [data-testid="InputInstructions"],
+.input-fixed .stTextInput [data-testid="InputInstructions"],
+.input-fixed .stTextInput p,
+.input-fixed .stTextInput small {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Fallback: Streamlit may mount instruction text outside custom wrapper */
+[data-testid="InputInstructions"],
+[data-testid="stTextInputInstructions"],
+.stTextInputInstructions {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .stForm, [data-testid="stForm"] {
   background: var(--surface) !important;
   border: 1px solid var(--border-2) !important;
   border-radius: 28px !important;
-  padding: 4px 6px 4px 20px !important;
+  padding: 5px 6px 5px 20px !important;
   transition: border-color 0.2s, box-shadow 0.2s !important;
   /* Force the pill itself to be constrained and centered */
   max-width: 1000px !important;
@@ -732,8 +826,8 @@ section[data-testid="stSidebar"] [data-testid="column"]:nth-child(2) button:hove
   font-weight: 700 !important;
   transition: opacity 0.15s, transform 0.15s !important;
   flex-shrink: 0 !important;
-  margin-left: 27px !important;
-  margin-top: 3px !important;
+  margin-left: 24px !important;
+  margin-top: 2px !important;
 }
 [data-testid="stFormSubmitButton"] > button:hover {
   opacity: 0.88 !important;
@@ -760,10 +854,25 @@ section[data-testid="stSidebar"] [data-testid="column"]:nth-child(2) button:hove
   color: var(--on-surface-3);
 }
 
+.stream-meta {
+  max-width: 1000px;
+  width: 80%;
+  margin: -8px auto 14px;
+  padding: 0 32px 0 80px;
+  font-size: 0.74rem;
+  color: var(--on-surface-3);
+  letter-spacing: 0.01em;
+}
+.stream-meta-error {
+  color: var(--red);
+}
+
 @media (max-width: 992px) {
-  .input-fixed { margin-left: 0; padding: 10px 16px 16px; }
+  .top-bar { left: 0; }
+  .input-fixed { margin-left: 0; padding: 8px 16px 10px; }
   .input-inner { max-width: 100%; }
   .tb-chat-pill { display: none; }
+  .stream-meta { width: 100%; padding: 0 10px 0 50px; }
 }
 
 /* ── WELCOME — Gemini Style ── */
@@ -771,7 +880,9 @@ section[data-testid="stSidebar"] [data-testid="column"]:nth-child(2) button:hove
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 80px 32px 120px;
+  justify-content: center;
+  min-height: calc(100vh - 58px - 92px);
+  padding: 24px 32px 86px;
   text-align: center;
   max-width: 768px;
   margin: 0 auto;
@@ -798,7 +909,7 @@ section[data-testid="stSidebar"] [data-testid="column"]:nth-child(2) button:hove
 .welcome-subtitle {
   font-size: 1.125rem;
   color: var(--on-surface-2);
-  margin-bottom: 40px;
+  margin-bottom: 22px;
   line-height: 1.6;
 }
 .suggestion-grid {
@@ -872,10 +983,14 @@ hr {
 ::-webkit-scrollbar-thumb:hover { background: var(--surface-hover); }
 
 @media (max-width: 768px) {
-  .welcome-wrap { padding: 50px 16px 110px; }
+  .welcome-wrap {
+    justify-content: flex-start;
+    min-height: calc(100vh - 56px - 88px);
+    padding: 12px 16px 80px;
+  }
   .welcome-greeting { font-size: 2.2rem; }
   .suggestion-grid { grid-template-columns: 1fr; }
-  .msgs-wrap { padding: 16px 0 16px; }
+  .msgs-wrap { padding: 8px 0 116px; }
   .bubble-user { max-width: 92%; }
 }
 """
@@ -885,12 +1000,15 @@ _SIDEBAR_RESIZE_JS = """
 <script>
 (function() {
   function initResize() {
-    var sidebar = window.parent.document.querySelector('section[data-testid="stSidebar"]');
+    var rootWin = (window.parent && window.parent.document) ? window.parent : window;
+    var rootDoc = rootWin.document;
+
+    var sidebar = rootDoc.querySelector('section[data-testid="stSidebar"]');
     if (!sidebar) { setTimeout(initResize, 600); return; }
 
-    var handle = window.parent.document.getElementById('__lex_sb_handle');
+    var handle = rootDoc.getElementById('__lex_sb_handle');
     if (!handle) {
-      handle = window.parent.document.createElement('div');
+      handle = rootDoc.createElement('div');
       handle.id = '__lex_sb_handle';
       Object.assign(handle.style, {
         position: 'absolute', top: '0', right: '-4px', bottom: '0',
@@ -910,29 +1028,97 @@ _SIDEBAR_RESIZE_JS = """
     var dragging = false, startX, startW;
     var MIN_W = 160, MAX_W = 480;
 
+    function getSidebarOffset() {
+      var rect = sidebar.getBoundingClientRect();
+      var cs = rootWin.getComputedStyle(sidebar);
+      var hidden =
+        rect.width <= 0 ||
+        rect.right <= 0 ||
+        cs.display === 'none' ||
+        cs.visibility === 'hidden' ||
+        sidebar.getAttribute('aria-expanded') === 'false';
+      return hidden ? 0 : Math.max(0, Math.round(rect.width));
+    }
+
+    function getDocs() {
+      var docs = [window.document];
+      try {
+        if (window.parent && window.parent.document && window.parent.document !== window.document) {
+          docs.push(window.parent.document);
+        }
+      } catch (e) {}
+      return docs;
+    }
+
+    function applyOffsets(widthPx) {
+      getDocs().forEach(function(doc) {
+        var bar = doc.querySelector('.input-fixed');
+        var top = doc.querySelector('.top-bar');
+        if (bar) {
+          bar.style.setProperty('margin-left', widthPx + 'px', 'important');
+        }
+        if (top) {
+          top.style.setProperty('left', widthPx + 'px', 'important');
+          top.style.setProperty('right', 'auto', 'important');
+          top.style.setProperty('width', 'calc(100vw - ' + widthPx + 'px)', 'important');
+        }
+      });
+    }
+
+    function syncOffsetsFromSidebar() {
+      applyOffsets(getSidebarOffset());
+    }
+
+    syncOffsetsFromSidebar();
+
     handle.addEventListener('mousedown', function(e) {
       dragging = true; startX = e.clientX;
       startW = sidebar.getBoundingClientRect().width;
       handle.style.background = 'rgba(138,180,248,0.45)';
-      window.parent.document.body.style.userSelect = 'none';
-      window.parent.document.body.style.cursor = 'col-resize';
+      rootDoc.body.style.userSelect = 'none';
+      rootDoc.body.style.cursor = 'col-resize';
     });
-    window.parent.document.addEventListener('mousemove', function(e) {
+    rootDoc.addEventListener('mousemove', function(e) {
       if (!dragging) return;
       var newW = Math.min(MAX_W, Math.max(MIN_W, startW + (e.clientX - startX)));
       sidebar.style.width = newW + 'px'; sidebar.style.minWidth = newW + 'px';
-      var bar = window.parent.document.querySelector('.input-fixed');
-      if (bar) bar.style.marginLeft = newW + 'px';
+      applyOffsets(newW);
     });
-    window.parent.document.addEventListener('mouseup', function() {
+    rootDoc.addEventListener('mouseup', function() {
       if (!dragging) return;
       dragging = false; handle.style.background = '';
-      window.parent.document.body.style.userSelect = '';
-      window.parent.document.body.style.cursor = '';
+      rootDoc.body.style.userSelect = '';
+      rootDoc.body.style.cursor = '';
+      syncOffsetsFromSidebar();
     });
+
+    var ro = new rootWin.ResizeObserver(function() {
+      if (!dragging) syncOffsetsFromSidebar();
+    });
+    ro.observe(sidebar);
+
+    var mo = new rootWin.MutationObserver(function() {
+      if (!dragging) syncOffsetsFromSidebar();
+    });
+    mo.observe(sidebar, { attributes: true, attributeFilter: ['style', 'class', 'aria-expanded'] });
+
+    rootWin.addEventListener('resize', syncOffsetsFromSidebar);
+
+    rootDoc.addEventListener('click', function(e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      if (t.closest('[data-testid="collapsedControl"], section[data-testid="stSidebarCollapsedControl"]')) {
+        setTimeout(syncOffsetsFromSidebar, 50);
+        setTimeout(syncOffsetsFromSidebar, 200);
+        setTimeout(syncOffsetsFromSidebar, 500);
+      }
+    }, true);
+
+    setInterval(syncOffsetsFromSidebar, 300);
   }
-  if (window.parent.document.readyState === 'loading') {
-    window.parent.document.addEventListener('DOMContentLoaded', initResize);
+  var readyDoc = (window.parent && window.parent.document) ? window.parent.document : window.document;
+  if (readyDoc.readyState === 'loading') {
+    readyDoc.addEventListener('DOMContentLoaded', initResize);
   } else { initResize(); }
 })();
 </script>

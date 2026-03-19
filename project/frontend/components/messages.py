@@ -100,7 +100,7 @@ def _render_ref_expander(refs: list, msg_idx: int) -> None:
 
 
 def _render_ref_card_js(ref: dict, msg_idx: int, ref_idx: int) -> None:
-    """Ref card with pure-JS View More toggle. No st.button = no scroll-to-top."""
+    """Ref card with native details/summary toggle for stable expand/collapse."""
     score        = ref.get("relevance_score", 0)
     score_pct    = min(100, max(5, int((score + 5) / 10 * 100)))
     act_name     = str(ref.get("act_name", ""))
@@ -127,8 +127,6 @@ def _render_ref_card_js(ref: dict, msg_idx: int, ref_idx: int) -> None:
     copy_q       = quote(copy_payload)
 
     card_id  = f"rc_{msg_idx}_{ref_idx}"
-    text_id  = f"rt_{msg_idx}_{ref_idx}"
-    btn_id   = f"rb_{msg_idx}_{ref_idx}"
 
     has_more    = len(clause_text) > 380
     source      = str(ref.get("source_url", ""))
@@ -138,17 +136,20 @@ def _render_ref_card_js(ref: dict, msg_idx: int, ref_idx: int) -> None:
         if source.startswith("http") else ""
     )
 
-    more_btn = f"""
-      <button id="{btn_id}" class="vm-js-btn" onclick="
-        var t=document.getElementById('{text_id}');
-        var b=document.getElementById('{btn_id}');
-        if(t.classList.contains('clamped')){{
-          t.classList.remove('clamped'); b.textContent='▲ Show less';
-        }}else{{
-          t.classList.add('clamped'); b.textContent='▼ View full text';
-        }}
-      ">▼ View full text</button>
-    """ if has_more else ""
+    text_block = (
+        f"""
+      <details class="ref-more">
+        <summary class="vm-js-btn">
+          <span class="vm-open">▼ View full text</span>
+          <span class="vm-close">▲ Show less</span>
+        </summary>
+        <div class="ref-text ref-text-full">{esc_clause}</div>
+      </details>
+      <div class="ref-text ref-text-preview clamped">{esc_clause}</div>
+        """
+        if has_more
+        else f'<div class="ref-text">{esc_clause}</div>'
+    )
 
     st.markdown(f"""
     <div class="ref-card" id="{card_id}">
@@ -183,8 +184,7 @@ def _render_ref_card_js(ref: dict, msg_idx: int, ref_idx: int) -> None:
       <div class="ref-bar-wrap">
         <div class="ref-bar-fill" style="width:{score_pct}%"></div>
       </div>
-      <div class="ref-text clamped" id="{text_id}">{esc_clause}</div>
-      {more_btn}
+      {text_block}
       {src_html}
     </div>
     """, unsafe_allow_html=True)

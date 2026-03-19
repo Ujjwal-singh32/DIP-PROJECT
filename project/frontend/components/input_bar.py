@@ -10,9 +10,6 @@ import streamlit as st
 def render_input_bar() -> tuple[str, bool]:
     """Render fixed-bottom input. Returns (query, submitted)."""
 
-    # Spacer so content isn't hidden behind the fixed bar
-    st.markdown('<div style="height:110px"></div>', unsafe_allow_html=True)
-
     query     = ""
     submitted = False
 
@@ -31,7 +28,6 @@ def render_input_bar() -> tuple[str, bool]:
 
     st.markdown(
         '<div class="input-hint">'
-        '<kbd>Enter ↵</kbd> to send &middot; LexAI cites exact Act &amp; Section'
         '</div>',
         unsafe_allow_html=True,
     )

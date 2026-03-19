@@ -11,7 +11,7 @@ from backend.chat_store import add_message, get_chat_history_for_llm
 from frontend.components.messages import render_streaming_user
 
 
-def run_stream(pipeline, query: str, chat_id: str) -> None:
+def run_stream(pipeline, query: str, chat_id: str, live_container=None) -> None:
     """
     Full streaming flow:
       1. Save user message
@@ -27,12 +27,19 @@ def run_stream(pipeline, query: str, chat_id: str) -> None:
     history = get_chat_history_for_llm(chat_id)
     history = history[:-1] if history else []
 
-    # Show user bubble right away
-    render_streaming_user(query)
+    target = live_container if live_container is not None else st
 
-    # Placeholders
-    stream_ph  = st.empty()
-    status_ph  = st.status("🔍 Searching law sections…", expanded=False)
+    with target:
+        # Show user bubble right away
+        render_streaming_user(query)
+
+        # Placeholders
+        stream_ph = st.empty()
+        meta_ph = st.empty()
+        meta_ph.markdown(
+            '<div class="stream-meta">Searching legal sections...</div>',
+            unsafe_allow_html=True,
+        )
 
     streamed    = ""
     references  = []
@@ -43,15 +50,17 @@ def run_stream(pipeline, query: str, chat_id: str) -> None:
         if event["type"] == "references":
             references = event["data"]
             n = len(references)
-            status_ph.update(
-                label=f"✓ {n} section{'s' if n!=1 else ''} found — writing answer…"
+            plural = "s" if n != 1 else ""
+            meta_ph.markdown(
+                f'<div class="stream-meta">Found {n} section{plural}... drafting answer.</div>',
+                unsafe_allow_html=True,
             )
 
         elif event["type"] == "chunk":
             streamed += event["text"]
             stream_ph.markdown(
                 f'<div class="msg-row">'
-                f'<div class="av av-lex">L</div>'
+                f'<div class="av av-lex">✦</div>'
                 f'<div class="msg-body">'
                 f'<div class="bubble-lex">{streamed}<span class="cursor"></span></div>'
                 f'</div></div>',
@@ -62,18 +71,21 @@ def run_stream(pipeline, query: str, chat_id: str) -> None:
             full_answer = event["full_answer"]
             stream_ph.markdown(
                 f'<div class="msg-row">'
-                f'<div class="av av-lex">L</div>'
+                f'<div class="av av-lex">✦</div>'
                 f'<div class="msg-body">'
                 f'<div class="bubble-lex">{full_answer}</div>'
                 f'</div></div>',
                 unsafe_allow_html=True,
             )
-            status_ph.update(label="✓ Answer ready", state="complete")
+            meta_ph.empty()
 
         elif event["type"] == "error":
             full_answer = "Sorry, an error occurred. Please try again."
             stream_ph.error(f"Error: {event['message']}")
-            status_ph.update(label="Error", state="error")
+            meta_ph.markdown(
+                '<div class="stream-meta stream-meta-error">Unable to generate response.</div>',
+                unsafe_allow_html=True,
+            )
 
     # Persist completed answer
     if full_answer:
