@@ -428,6 +428,69 @@ section[data-testid="stSidebar"] [data-testid="column"]:nth-child(2) button:hove
   color: var(--on-surface) !important;
   word-break: break-word;
 }
+.ans-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ans-act {
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--blue-2) !important;
+}
+.ans-brief {
+  font-size: 0.95rem;
+  color: var(--on-surface) !important;
+}
+.ans-details {
+  margin-top: 2px;
+}
+.ans-details > summary {
+  list-style: none;
+}
+.ans-details > summary::-webkit-details-marker {
+  display: none;
+}
+.ans-details-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  color: var(--blue);
+  border: 1px solid rgba(138,180,248,0.3);
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-family: 'Google Sans Text', sans-serif;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ans-details .ans-close {
+  display: none;
+}
+.ans-details[open] .ans-open {
+  display: none;
+}
+.ans-details[open] .ans-close {
+  display: inline;
+}
+.ans-details[open] .ans-details-btn {
+  background: rgba(66,133,244,0.1);
+  border-color: var(--blue);
+}
+.ans-details[open] .ans-details-btn {
+  color: var(--blue-2);
+}
+.ans-detailed {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--blue-dark);
+  background: rgba(66,133,244,0.08);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  color: var(--on-surface-2) !important;
+  line-height: 1.72;
+}
 .bubble-lex strong { color: var(--blue-2) !important; font-weight: 600; }
 .bubble-lex em { color: var(--on-surface-2); font-style: italic; }
 .bubble-lex blockquote {
