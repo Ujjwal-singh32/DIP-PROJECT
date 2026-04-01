@@ -58,15 +58,15 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # ── Gemini ──────────────────────────────────────────────────────
-    gemini_api_key: str = Field(
-        ..., validation_alias="GEMINI_API_KEY", description="Google Gemini API key"
+    # ── Cohere ──────────────────────────────────────────────────────
+    cohere_api_key: str = Field(
+        ..., validation_alias="cohere_api_key", description="Cohere API key"
     )
 
-    gemini_model: str = Field(
-        "gemini-1.5-flash",
-        validation_alias="GEMINI_MODEL",
-        description="Gemini model name",
+    cohere_model: str = Field(
+        "command-a-03-2025",
+        validation_alias="COHERE_MODEL",
+        description="Cohere model name",
     )
 
     # ── MongoDB ─────────────────────────────────────────────────────

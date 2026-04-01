@@ -19,7 +19,7 @@ from typing import List, Optional
 from backend.config import settings
 from backend.context_builder import ContextBuilder, LegalReference
 from backend.embedding_model import EmbeddingModel
-from backend.llm_client import GeminiClient
+from backend.llm_client import CohereClient
 from backend.memory_manager import MemoryManager
 from backend.reranker import Reranker
 from backend.retriever import Retriever
@@ -60,7 +60,7 @@ class RAGPipeline:
         # Load models (expensive – done once at startup)
         self.embedding_model = EmbeddingModel()
         self.reranker = Reranker()
-        self.llm = GeminiClient()
+        self.llm = CohereClient()
 
         # Load Weaviate vector store
         self.vector_store = VectorStore()
